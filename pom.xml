@@ -10,7 +10,19 @@
     <version>1.0.0-SNAPSHOT</version>
     <modules>
         <module>liq-store</module>
+        <module>liq-common</module>
     </modules>
+
+    <properties>
+        <junit.version>4.12</junit.version>
+        <sl4j-log4j.version>1.7.25</sl4j-log4j.version>
+    </properties>
+
+    <dependencies>
+
+
+
+    </dependencies>
 
 
 </project>
