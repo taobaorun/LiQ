@@ -68,10 +68,22 @@ public class MappedFile {
             fileChannel.position(newPos);
             wrotePosition.set(newPos);
         } catch (IOException e) {
-            logger.error("append data for {}.",fileName,e);
+            logger.error("append data for {}.", fileName, e);
             return false;
         }
         return true;
+    }
+
+    public SelectedMappedFileSection selectMappedFileSection(int pos, int size) {
+        int wrotePos = getWrotePostion();
+        if (pos >= 0 && (pos + size) <= wrotePos) {
+            ByteBuffer byteBuffer = mappedByteBuffer.slice();
+            byteBuffer.position(pos);
+            ByteBuffer selected = byteBuffer.slice();
+            selected.limit(size);
+            return new SelectedMappedFileSection(selected, size);
+        }
+        return null;
     }
 
 
@@ -105,6 +117,10 @@ public class MappedFile {
         } catch (IOException e) {
             logger.error("create mapped file for {} error.", fileName, e);
         }
+    }
+
+    private int getWrotePostion() {
+        return wrotePosition.get();
     }
 
 }

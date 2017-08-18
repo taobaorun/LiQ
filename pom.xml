@@ -11,6 +11,7 @@
     <modules>
         <module>liq-store</module>
         <module>liq-common</module>
+        <module>liq-core</module>
     </modules>
 
     <properties>

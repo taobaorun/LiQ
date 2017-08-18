@@ -16,6 +16,7 @@ package com.jiaxy.liq.store;
 
 import com.jiaxy.liq.common.FileUtil;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -29,9 +30,15 @@ import static org.junit.Assert.*;
  */
 public class MappedFileTest {
 
+    private MappedFile mmFile;
+
+    @Before
+    public void setUp() throws Exception {
+        mmFile = new MappedFile(FileUtil.getFileName(0),2048);
+    }
+
     @Test
     public void appendData() throws Exception {
-        MappedFile mmFile = new MappedFile(FileUtil.getFileName(0),2048);
         mmFile.appendData("123\n".getBytes());
         mmFile.appendData("456\n".getBytes());
         mmFile.appendData("789\n".getBytes());
@@ -40,8 +47,27 @@ public class MappedFileTest {
 
     @Test
     public void destroy() throws Exception {
-        MappedFile mmFile = new MappedFile(FileUtil.getFileName(0),2048);
         Assert.assertNotNull(mmFile);
         mmFile.destroy();
+    }
+
+    @Test
+    public void selectMappedFileSection() throws Exception {
+        mmFile.appendData("123\n".getBytes());
+        mmFile.appendData("456\n".getBytes());
+        mmFile.appendData("789\n".getBytes());
+        SelectedMappedFileSection section = mmFile.selectMappedFileSection(0, 3);
+        Assert.assertNotNull(section);
+        byte[] data = new byte[section.getSize()];
+        section.getByteBuffer().get(data);
+        Assert.assertEquals("123",new String(data));
+        section = mmFile.selectMappedFileSection(1, 3);
+        Assert.assertNotNull(section);
+        section.getByteBuffer().get(data);
+        Assert.assertEquals("23\n",new String(data));
+        section = mmFile.selectMappedFileSection(8, 3);
+        Assert.assertNotNull(section);
+        section.getByteBuffer().get(data);
+        Assert.assertEquals("789",new String(data));
     }
 }
