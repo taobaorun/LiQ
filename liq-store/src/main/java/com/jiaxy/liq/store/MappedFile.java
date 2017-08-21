@@ -39,7 +39,10 @@ public class MappedFile {
 
     private static final Logger logger = LoggerFactory.getLogger(MappedFile.class);
 
+    //file start offset
     private final String fileName;
+
+    private long fileStartOffset;
 
     //one file size
     private final int fileSize;
@@ -75,7 +78,7 @@ public class MappedFile {
     }
 
     public SelectedMappedFileSection selectMappedFileSection(int pos, int size) {
-        int wrotePos = getWrotePostion();
+        int wrotePos = getWrotePosition();
         if (pos >= 0 && (pos + size) <= wrotePos) {
             ByteBuffer byteBuffer = mappedByteBuffer.slice();
             byteBuffer.position(pos);
@@ -86,6 +89,21 @@ public class MappedFile {
         return null;
     }
 
+
+    public long getFileStartOffset() {
+        return fileStartOffset;
+    }
+
+
+    /**
+     * @return true if the file wrote to the file size
+     */
+    public boolean isFull() {
+        if (wrotePosition.get() == fileSize) {
+            return true;
+        }
+        return false;
+    }
 
     /**
      * destroy the file
@@ -108,8 +126,9 @@ public class MappedFile {
 
 
     private void build() {
-        this.file = new File(fileName);
         try {
+            this.file = new File(fileName);
+            this.fileStartOffset = Long.parseLong(file.getName());
             fileChannel = new RandomAccessFile(file, "rw").getChannel();
             mappedByteBuffer = fileChannel.map(READ_WRITE, 0, fileSize);
         } catch (FileNotFoundException e) {
@@ -119,7 +138,7 @@ public class MappedFile {
         }
     }
 
-    private int getWrotePostion() {
+    private int getWrotePosition() {
         return wrotePosition.get();
     }
 

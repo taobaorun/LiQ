@@ -12,6 +12,12 @@
     <artifactId>liq-store</artifactId>
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.jiaxy.liq</groupId>
+            <artifactId>liq-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.jiaxy.liq</groupId>
             <artifactId>liq-common</artifactId>

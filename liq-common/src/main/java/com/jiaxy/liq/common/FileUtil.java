@@ -14,6 +14,7 @@
 
 package com.jiaxy.liq.common;
 
+import java.nio.MappedByteBuffer;
 import java.text.NumberFormat;
 
 /**
@@ -39,5 +40,15 @@ public class FileUtil {
         nf.setMaximumFractionDigits(0);
         nf.setGroupingUsed(false);
         return nf.format(offset);
+    }
+
+    /**
+     * unmap
+     *
+     * @param mappedByteBuffer
+     */
+    public static void unmap(MappedByteBuffer mappedByteBuffer) {
+        //TODO
+
     }
 }

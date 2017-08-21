@@ -34,7 +34,7 @@ public class MappedFileTest {
 
     @Before
     public void setUp() throws Exception {
-        mmFile = new MappedFile(FileUtil.getFileName(0),2048);
+        mmFile = new MappedFile(FileUtil.getFileName(0), 2048);
     }
 
     @Test
