@@ -12,44 +12,27 @@
  *    limitations under the License.
  */
 
-package com.jiaxy.liq.store;
+package com.jiaxy.liq.common;
 
 /**
  * Description: <br/>
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/21 14:34
+ * @Date: 2017/08/22 16:17
  */
-public class PutMessageResult {
+public class StringUtil {
 
-    private PutMessageStatus status;
+    private final static char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
-    private AppendMeta appendResult;
-
-
-    public PutMessageResult(PutMessageStatus status) {
-        this.status = status;
+    public static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int i = 0; i < bytes.length; i++) {
+            int v = bytes[i] & 0xFF;
+            hexChars[i * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[i * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 
-    public PutMessageResult() {
-    }
-
-    public PutMessageStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PutMessageStatus status) {
-        this.status = status;
-    }
-
-    public AppendMeta getAppendResult() {
-        return appendResult;
-    }
-
-    public void setAppendResult(AppendMeta appendResult) {
-        this.appendResult = appendResult;
-    }
 }
-
-

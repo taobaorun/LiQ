@@ -16,40 +16,15 @@ package com.jiaxy.liq.store;
 
 /**
  * Description: <br/>
+ *
+ *  store messages
+ *
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/21 14:34
+ * @Date: 2017/08/22 10:40
  */
-public class PutMessageResult {
-
-    private PutMessageStatus status;
-
-    private AppendMeta appendResult;
+public interface MessageStore {
 
 
-    public PutMessageResult(PutMessageStatus status) {
-        this.status = status;
-    }
-
-    public PutMessageResult() {
-    }
-
-    public PutMessageStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PutMessageStatus status) {
-        this.status = status;
-    }
-
-    public AppendMeta getAppendResult() {
-        return appendResult;
-    }
-
-    public void setAppendResult(AppendMeta appendResult) {
-        this.appendResult = appendResult;
-    }
 }
-
-

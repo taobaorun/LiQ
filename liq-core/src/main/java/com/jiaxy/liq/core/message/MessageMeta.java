@@ -27,6 +27,8 @@ public class MessageMeta {
 
     private String topic;
 
+    private byte[] topicData;
+
     private int flag;
 
     private String msgId;
@@ -47,12 +49,13 @@ public class MessageMeta {
     //the address the message created
     private SocketAddress bornHost;
 
-    private String bornTimestamp;
+    private long bornTimestamp;
 
     //the address the message stored
     private SocketAddress storedHost;
 
     private long storedTimestamp;
+
 
     public String getTopic() {
         return topic;
@@ -134,11 +137,11 @@ public class MessageMeta {
         this.bornHost = bornHost;
     }
 
-    public String getBornTimestamp() {
+    public long getBornTimestamp() {
         return bornTimestamp;
     }
 
-    public void setBornTimestamp(String bornTimestamp) {
+    public void setBornTimestamp(long bornTimestamp) {
         this.bornTimestamp = bornTimestamp;
     }
 
@@ -156,5 +159,13 @@ public class MessageMeta {
 
     public void setStoredTimestamp(long storedTimestamp) {
         this.storedTimestamp = storedTimestamp;
+    }
+
+    public byte[] getTopicData() {
+        return topicData;
+    }
+
+    public void setTopicData(byte[] topicData) {
+        this.topicData = topicData;
     }
 }

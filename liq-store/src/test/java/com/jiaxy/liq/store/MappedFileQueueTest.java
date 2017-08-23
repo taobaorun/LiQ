@@ -33,16 +33,16 @@ public class MappedFileQueueTest {
                 .getContextClassLoader()
                 .getResource("")
                 .getPath(), 1024);
-        MappedFile mappedFile = mappedFileQueue.getMappedFile(100, true);
+        MappedFile mappedFile = mappedFileQueue.getLastMappedFile(100, true);
         Assert.assertNotNull(mappedFile);
         mappedFile.appendData("123".getBytes());
-        MappedFile mappedFile2 = mappedFileQueue.getMappedFile(200, true);
+        MappedFile mappedFile2 = mappedFileQueue.getLastMappedFile(200, true);
         Assert.assertEquals(mappedFile, mappedFile2);
         for (int i = 0; i < 1021; i++) {
             mappedFile2.appendData(String.valueOf(1).getBytes());
         }
         Assert.assertEquals(true, mappedFile2.isFull());
-        MappedFile mappedFile3 = mappedFileQueue.getMappedFile(200, true);
+        MappedFile mappedFile3 = mappedFileQueue.getLastMappedFile(200, true);
         Assert.assertNotEquals(mappedFile, mappedFile3);
         for (int i = 0; i < 1024; i++) {
             mappedFile3.appendData(String.valueOf(1).getBytes());

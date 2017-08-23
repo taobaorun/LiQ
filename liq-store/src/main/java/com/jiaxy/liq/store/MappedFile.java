@@ -56,7 +56,10 @@ public class MappedFile {
     //file wrote position
     private final AtomicInteger wrotePosition = new AtomicInteger(0);
 
-    public MappedFile(String fileName, int fileSize) {
+    //file flushed position
+    private final AtomicInteger flushedPosition = new AtomicInteger(0);
+
+    public MappedFile(String fileName, int fileSize) throws IOException {
         this.fileName = fileName;
         this.fileSize = fileSize;
         build();
@@ -77,6 +80,28 @@ public class MappedFile {
         return true;
     }
 
+
+    /**
+     * @param dataHandler
+     * @return
+     */
+    public AppendMeta appendInByteBuffer(AppendFunction dataHandler) {
+        ByteBuffer byteBuffer = mappedByteBuffer.slice();
+        //set wrote position
+        byteBuffer.position(wrotePosition.get());
+        AppendMeta appendMeta = dataHandler.apply(byteBuffer, getFileStartOffset() + wrotePosition.get(), fileSize - wrotePosition.get());
+        wrotePosition.addAndGet(appendMeta.getWroteBytes());
+        return appendMeta;
+    }
+
+    /**
+     *
+     * @param pos relative position in a file
+     *
+     * @param size stored message size
+     *
+     * @return
+     */
     public SelectedMappedFileSection selectMappedFileSection(int pos, int size) {
         int wrotePos = getWrotePosition();
         if (pos >= 0 && (pos + size) <= wrotePos) {
@@ -105,6 +130,15 @@ public class MappedFile {
         return false;
     }
 
+    public int getWrotePosition() {
+        return wrotePosition.get();
+    }
+
+    public int getFlushedPosition() {
+        return flushedPosition.get();
+    }
+
+
     /**
      * destroy the file
      *
@@ -124,8 +158,31 @@ public class MappedFile {
         return true;
     }
 
+    /**
+     *
+     * @return
+     */
+    public int flush() {
+        int wrotePos = getWrotePosition();
+        mappedByteBuffer.force();
+        flushedPosition.set(wrotePos);
+        return flushedPosition.get();
+    }
 
-    private void build() {
+
+    /**
+     * the file just loaded.
+     */
+    public void loaded() {
+        this.wrotePosition.set(fileSize);
+        this.flushedPosition.set(fileSize);
+    }
+
+    public int getFileSize() {
+        return fileSize;
+    }
+
+    private void build() throws IOException {
         try {
             this.file = new File(fileName);
             this.fileStartOffset = Long.parseLong(file.getName());
@@ -133,13 +190,12 @@ public class MappedFile {
             mappedByteBuffer = fileChannel.map(READ_WRITE, 0, fileSize);
         } catch (FileNotFoundException e) {
             logger.error("create file for {} error.", fileName, e);
+            throw e;
         } catch (IOException e) {
             logger.error("create mapped file for {} error.", fileName, e);
+            throw e;
         }
     }
 
-    private int getWrotePosition() {
-        return wrotePosition.get();
-    }
 
 }

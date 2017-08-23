@@ -12,44 +12,18 @@
  *    limitations under the License.
  */
 
-package com.jiaxy.liq.store;
+package com.jiaxy.liq.core.message;
 
 /**
  * Description: <br/>
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/21 14:34
+ * @Date: 2017/08/22 11:34
  */
-public class PutMessageResult {
+public class MessageType {
 
-    private PutMessageStatus status;
-
-    private AppendMeta appendResult;
+    public static final int TRANSACTION_NOT_TYPE = 0;
 
 
-    public PutMessageResult(PutMessageStatus status) {
-        this.status = status;
-    }
-
-    public PutMessageResult() {
-    }
-
-    public PutMessageStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PutMessageStatus status) {
-        this.status = status;
-    }
-
-    public AppendMeta getAppendResult() {
-        return appendResult;
-    }
-
-    public void setAppendResult(AppendMeta appendResult) {
-        this.appendResult = appendResult;
-    }
 }
-
-

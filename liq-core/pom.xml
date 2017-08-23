@@ -25,5 +25,13 @@
 
     <artifactId>liq-core</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.jiaxy.liq</groupId>
+            <artifactId>liq-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
 
 </project>

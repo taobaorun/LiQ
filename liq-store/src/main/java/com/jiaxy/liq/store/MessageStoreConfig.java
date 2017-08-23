@@ -19,37 +19,29 @@ package com.jiaxy.liq.store;
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/21 14:34
+ * @Date: 2017/08/22 11:11
  */
-public class PutMessageResult {
+public class MessageStoreConfig {
 
-    private PutMessageStatus status;
+    //message stored dir path
+    private String storePath;
 
-    private AppendMeta appendResult;
+    //1G
+    private int commitLogFileSize = 1024 * 1024 * 1024;
 
-
-    public PutMessageResult(PutMessageStatus status) {
-        this.status = status;
+    public String getStorePath() {
+        return storePath;
     }
 
-    public PutMessageResult() {
+    public void setStorePath(String storePath) {
+        this.storePath = storePath;
     }
 
-    public PutMessageStatus getStatus() {
-        return status;
+    public int getCommitLogFileSize() {
+        return commitLogFileSize;
     }
 
-    public void setStatus(PutMessageStatus status) {
-        this.status = status;
-    }
-
-    public AppendMeta getAppendResult() {
-        return appendResult;
-    }
-
-    public void setAppendResult(AppendMeta appendResult) {
-        this.appendResult = appendResult;
+    public void setCommitLogFileSize(int commitLogFileSize) {
+        this.commitLogFileSize = commitLogFileSize;
     }
 }
-
-

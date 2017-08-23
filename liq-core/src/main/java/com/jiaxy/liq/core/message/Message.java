@@ -26,7 +26,7 @@ import java.util.Map;
  */
 public class Message {
 
-    private MessageMeta meta;
+    private MessageMeta meta = new MessageMeta();
 
     private Map<String, String> attachments = new HashMap<String, String>();
 

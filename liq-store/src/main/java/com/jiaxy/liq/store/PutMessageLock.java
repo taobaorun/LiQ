@@ -19,37 +19,13 @@ package com.jiaxy.liq.store;
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/21 14:34
+ * @Date: 2017/08/22 11:50
  */
-public class PutMessageResult {
-
-    private PutMessageStatus status;
-
-    private AppendMeta appendResult;
+public interface PutMessageLock {
 
 
-    public PutMessageResult(PutMessageStatus status) {
-        this.status = status;
-    }
+    void lock();
 
-    public PutMessageResult() {
-    }
+    void unLock();
 
-    public PutMessageStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PutMessageStatus status) {
-        this.status = status;
-    }
-
-    public AppendMeta getAppendResult() {
-        return appendResult;
-    }
-
-    public void setAppendResult(AppendMeta appendResult) {
-        this.appendResult = appendResult;
-    }
 }
-
-

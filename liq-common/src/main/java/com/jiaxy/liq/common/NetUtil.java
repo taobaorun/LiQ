@@ -12,44 +12,27 @@
  *    limitations under the License.
  */
 
-package com.jiaxy.liq.store;
+package com.jiaxy.liq.common;
+
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
 /**
  * Description: <br/>
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/21 14:34
+ * @Date: 2017/08/22 17:10
  */
-public class PutMessageResult {
+public class NetUtil {
 
-    private PutMessageStatus status;
-
-    private AppendMeta appendResult;
-
-
-    public PutMessageResult(PutMessageStatus status) {
-        this.status = status;
+    public static ByteBuffer socketAddress2ByteBuffer(InetSocketAddress address, ByteBuffer byteBuffer) {
+        if (address != null) {
+            byteBuffer.put(address.getAddress().getAddress(), 0, 4);
+            byteBuffer.putInt(address.getPort());
+            byteBuffer.flip();
+        }
+        return byteBuffer;
     }
 
-    public PutMessageResult() {
-    }
-
-    public PutMessageStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PutMessageStatus status) {
-        this.status = status;
-    }
-
-    public AppendMeta getAppendResult() {
-        return appendResult;
-    }
-
-    public void setAppendResult(AppendMeta appendResult) {
-        this.appendResult = appendResult;
-    }
 }
-
-

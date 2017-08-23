@@ -12,49 +12,26 @@
  *    limitations under the License.
  */
 
-package com.jiaxy.liq.store;
+package com.jiaxy.liq.common;
 
-import com.jiaxy.liq.core.message.Message;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Description: <br/>
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/21 14:32
+ * @Date: 2017/08/22 18:56
  */
-public interface CommitLog {
-
-
-    PutMessageResult putMessage(Message message);
-
-
-    /**
-     *
-     * @param phyOffset
-     *
-     * @param size message size
-     *
-     * @return
-     */
-    SelectedMappedFileSection getMessage(long phyOffset, int size);
-
-
-
-
-    void flush();
-
-
-    /**
-     * @return
-     */
-    boolean load();
-
-
-    /**
-     * commit log recover
-     */
-    void recover();
-
+public class StringUtilTest {
+    @Test
+    public void bytesToHex() throws Exception {
+        System.out.println(StringUtil.bytesToHex("COLE".getBytes()));
+        System.out.println(StringUtil.bytesToHex("BABA".getBytes()));
+        System.out.println(0x434f4c45 & 0x42414241);
+        System.out.println(0xBBCCDDEE ^ 1880681586 + 8);
+    }
 
 }

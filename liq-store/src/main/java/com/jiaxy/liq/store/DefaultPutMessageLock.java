@@ -14,42 +14,24 @@
 
 package com.jiaxy.liq.store;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * Description: <br/>
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/21 14:34
+ * @Date: 2017/08/22 11:51
  */
-public class PutMessageResult {
+public class DefaultPutMessageLock implements PutMessageLock {
 
-    private PutMessageStatus status;
+    private final ReentrantLock lock = new ReentrantLock();
 
-    private AppendMeta appendResult;
-
-
-    public PutMessageResult(PutMessageStatus status) {
-        this.status = status;
+    public void lock() {
+        lock.lock();
     }
 
-    public PutMessageResult() {
-    }
-
-    public PutMessageStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PutMessageStatus status) {
-        this.status = status;
-    }
-
-    public AppendMeta getAppendResult() {
-        return appendResult;
-    }
-
-    public void setAppendResult(AppendMeta appendResult) {
-        this.appendResult = appendResult;
+    public void unLock() {
+        lock.unlock();
     }
 }
-
-
