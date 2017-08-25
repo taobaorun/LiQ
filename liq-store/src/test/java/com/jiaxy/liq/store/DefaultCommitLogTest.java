@@ -21,6 +21,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
+import java.util.TreeMap;
+
 /**
  * Description: <br/>
  * <p/>
@@ -38,7 +41,7 @@ public class DefaultCommitLogTest {
         config.setStorePath(Thread.currentThread()
                 .getContextClassLoader()
                 .getResource("")
-                .getPath()+"store");
+                .getPath() + "store");
         config.setCommitLogFileSize(1024);
         defaultCommitLog = new DefaultCommitLog(config);
         defaultCommitLog.load();
@@ -52,43 +55,46 @@ public class DefaultCommitLogTest {
     public void putMessage() throws Exception {
         Message message = new Message();
         message.getMeta().setTopic("LiQTopic");
-        message.setData("Hello LiQ".getBytes());
-        defaultCommitLog.putMessage(message);
-        defaultCommitLog.putMessage(message);
-        defaultCommitLog.putMessage(message);
-        defaultCommitLog.putMessage(message);
-        defaultCommitLog.putMessage(message);
+        for (int i = 0; i < 1000; i++) {
+            message.setData(("Hello LiQ! " + i).getBytes());
+            defaultCommitLog.putMessage(message);
+        }
     }
 
     @Test
     public void getMessage() throws Exception {
-        SelectedMappedFileSection selectedMappedFileSection = defaultCommitLog.getMessage(0, 54);
-        Assert.assertNotNull(selectedMappedFileSection);
-        MessageProtocol protocol = new MessageProtocol();
-        Message message = protocol.readMessage(selectedMappedFileSection.getByteBuffer());
-        Assert.assertNotNull(message);
-        System.out.println(new String(message.getData()));
-        selectedMappedFileSection = defaultCommitLog.getMessage(54, 54);
-        message = protocol.readMessage(selectedMappedFileSection.getByteBuffer());
-        System.out.println(new String(message.getData()));
-        selectedMappedFileSection = defaultCommitLog.getMessage(108, 54);
-        message = protocol.readMessage(selectedMappedFileSection.getByteBuffer());
-        System.out.println(new String(message.getData()));
-        selectedMappedFileSection = defaultCommitLog.getMessage(162, 54);
-        message = protocol.readMessage(selectedMappedFileSection.getByteBuffer());
-        System.out.println(new String(message.getData()));
-
-
-
-
+        Message message = new Message();
+        message.getMeta().setTopic("LiQTopic");
+        TreeMap<Long, Integer> map = new TreeMap<>();
+        for (int i = 0; i < 10; i++) {
+            message.setData(("Hello LiQ! " + i).getBytes());
+            PutMessageResult result = defaultCommitLog.putMessage(message);
+            map.put(result.getAppendResult().getWroteOffset(), result.getAppendResult().getWroteBytes());
+        }
+        int index = 0;
+        for (Map.Entry<Long, Integer> entry : map.entrySet()) {
+            SelectedMappedFileSection selectedMappedFileSection = defaultCommitLog.getMessage(entry.getKey(), entry.getValue());
+            Assert.assertNotNull(selectedMappedFileSection);
+            MessageProtocol protocol = new MessageProtocol();
+            message = protocol.readMessage(selectedMappedFileSection.getByteBuffer());
+            Assert.assertNotNull(message);
+            Assert.assertEquals("Hello LiQ! " + (index++), new String(message.getData()));
+        }
     }
 
-    @Test
-    public void load() throws Exception {
-    }
 
     @Test
     public void recover() throws Exception {
+        defaultCommitLog.recover();
+        Message message = new Message();
+        message.getMeta().setTopic("LiQTopic");
+        TreeMap<Long, Integer> map = new TreeMap<>();
+        for (int i = 0; i < 10; i++) {
+            message.setData(("Hello LiQ! " + i).getBytes());
+            PutMessageResult result = defaultCommitLog.putMessage(message);
+            Assert.assertEquals(PutMessageStatus.PUT_OK,result.getStatus());
+            map.put(result.getAppendResult().getWroteOffset(), result.getAppendResult().getWroteBytes());
+        }
     }
 
 }

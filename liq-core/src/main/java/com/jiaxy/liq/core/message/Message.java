@@ -26,13 +26,22 @@ import java.util.Map;
  */
 public class Message {
 
-    private MessageMeta meta = new MessageMeta();
+    private MessageMeta meta;
 
     private Map<String, String> attachments = new HashMap<String, String>();
 
     // message data
     private byte[] data;
 
+    public Message() {
+        this(true);
+    }
+
+    public Message(boolean initMeta) {
+        if (initMeta) {
+            meta = new MessageMeta();
+        }
+    }
 
     public MessageMeta getMeta() {
         return meta;

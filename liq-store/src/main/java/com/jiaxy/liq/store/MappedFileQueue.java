@@ -20,7 +20,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -156,4 +158,11 @@ public class MappedFileQueue {
         return true;
     }
 
+    protected void setFlushedPosition(long flushedPosition) {
+        this.flushedPosition = flushedPosition;
+    }
+
+    protected List<MappedFile> getMappedFiles() {
+        return new ArrayList<>(mappedFiles);
+    }
 }

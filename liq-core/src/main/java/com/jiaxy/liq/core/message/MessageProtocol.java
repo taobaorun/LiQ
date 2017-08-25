@@ -20,6 +20,8 @@ import com.jiaxy.liq.common.StringUtil;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import static com.jiaxy.liq.core.message.MessageType.PADDING;
+
 /**
  * Description: <br/>
  * <p>
@@ -40,11 +42,11 @@ public class MessageProtocol {
     public final int MAGIC_CODE = 0x434f4c45 & 0x42414241;
 
     //0x41414C41
-    public final int BLANK_MESSAGE_CODE = 0x434f4c45 & 0x4D414D41;
+    public final int PADDING_MESSAGE_CODE = 0x434f4c45 & 0x4D414D41;
 
     public static final int MESSAGE_ID_LENGTH = 16;
 
-    public static final int BLANK_MESSAGE_LENGTH = 8;
+    public static final int PADDING_MESSAGE_LENGTH = 8;
 
 
     public void writeMessage(Message message, ByteBuffer byteBuffer) {
@@ -59,18 +61,52 @@ public class MessageProtocol {
         byteBuffer.put(message.getData());
     }
 
-    public void writeBlankMessage(ByteBuffer byteBuffer, long leftSpace) {
+    public void writePaddingMessage(ByteBuffer byteBuffer, long leftSpace) {
         byteBuffer.putInt((int) leftSpace);
-        byteBuffer.putInt(BLANK_MESSAGE_CODE);
+        byteBuffer.putInt(PADDING_MESSAGE_CODE);
     }
 
     public Message readMessage(ByteBuffer byteBuffer) {
-        int totalLength = byteBuffer.getInt();
-        int code = byteBuffer.getInt();
-        if (BLANK_MESSAGE_LENGTH == code) {
+        //read message meta
+        MessageMeta meta = readMessageMeta(byteBuffer);
+        if (meta.getMsgType() == PADDING_MESSAGE_CODE) {
             return null;
         }
-        Message message = new Message();
+        Message message = new Message(false);
+        message.setMeta(meta);
+        int dataLength = byteBuffer.getInt();
+        byte[] data = new byte[dataLength];
+        byteBuffer.get(data);
+        message.setData(data);
+        return message;
+    }
+
+
+    /**
+     *
+     * @param byteBuffer
+     * @param readData
+     * @return
+     */
+    public MessageMeta readMessageMeta(ByteBuffer byteBuffer, boolean readData) {
+        MessageMeta messageMeta = readMessageMeta(byteBuffer);
+        if (readData) {
+            int dataLength = byteBuffer.getInt();
+            byteBuffer.position(byteBuffer.position() + dataLength);
+        }
+        return messageMeta;
+    }
+
+
+    public MessageMeta readMessageMeta(ByteBuffer byteBuffer) {
+        int totalLength = byteBuffer.getInt();
+        int code = byteBuffer.getInt();
+        MessageMeta meta = new MessageMeta();
+        if (PADDING_MESSAGE_CODE == code) {
+            meta.setMsgType(PADDING);
+            meta.setTotalLength(totalLength);
+            return meta;
+        }
         long phyOffset = byteBuffer.getLong();
         long bornTimestamp = byteBuffer.getLong();
         long storedTimestamp = byteBuffer.getLong();
@@ -78,16 +114,13 @@ public class MessageProtocol {
         byte[] topicData = new byte[topicLength];
         byteBuffer.get(topicData);
         String topic = new String(topicData);
-        int dataLength = byteBuffer.getInt();
-        byte[] data = new byte[dataLength];
-        byteBuffer.get(data);
-        message.getMeta().setCommitLogOffset(phyOffset);
-        message.getMeta().setTopic(topic);
-        message.getMeta().setTotalLength(totalLength);
-        message.getMeta().setBornTimestamp(bornTimestamp);
-        message.getMeta().setStoredTimestamp(storedTimestamp);
-        message.setData(data);
-        return message;
+        meta.setCommitLogOffset(phyOffset);
+        meta.setTopic(topic);
+        meta.setTotalLength(totalLength);
+        meta.setBornTimestamp(bornTimestamp);
+        meta.setStoredTimestamp(storedTimestamp);
+        return meta;
+
     }
 
     /**

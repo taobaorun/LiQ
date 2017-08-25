@@ -25,6 +25,7 @@ public enum PutMessageStatus {
 
     PUT_OK,
     END_OF_FILE,
-    CREATE_MAPPED_FILE_ERROR;
+    CREATE_MAPPED_FILE_ERROR,
+    EXCEPTION;
 
 }

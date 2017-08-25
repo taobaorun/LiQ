@@ -30,22 +30,23 @@ public interface CommitLog {
 
 
     /**
-     *
      * @param phyOffset
-     *
-     * @param size message size
-     *
+     * @param size      message size
      * @return
      */
     SelectedMappedFileSection getMessage(long phyOffset, int size);
-
-
 
 
     void flush();
 
 
     /**
+     * load the store dir files </br>
+     * <p>
+     * just load the file.after {@link #recover()} successfully </br>
+     * <p>
+     * the commit log will be ready for operations (eg.{@link #putMessage(Message)})
+     *
      * @return
      */
     boolean load();

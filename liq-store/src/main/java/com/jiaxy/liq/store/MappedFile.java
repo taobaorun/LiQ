@@ -94,12 +94,13 @@ public class MappedFile {
         return appendMeta;
     }
 
+    public ByteBuffer sliceMappedByteBuffer() {
+        return mappedByteBuffer.slice();
+    }
+
     /**
-     *
-     * @param pos relative position in a file
-     *
+     * @param pos  relative position in a file
      * @param size stored message size
-     *
      * @return
      */
     public SelectedMappedFileSection selectMappedFileSection(int pos, int size) {
@@ -159,7 +160,6 @@ public class MappedFile {
     }
 
     /**
-     *
      * @return
      */
     public int flush() {
@@ -176,6 +176,21 @@ public class MappedFile {
     public void loaded() {
         this.wrotePosition.set(fileSize);
         this.flushedPosition.set(fileSize);
+    }
+
+
+    /**
+     * the file is ready
+     * <p>
+     * update {@code wrotePosition}
+     * <p>
+     * update {@code flushedPosition}
+     *
+     * @param pos relative position in the file
+     */
+    public void ready(int pos) {
+        this.wrotePosition.set(pos);
+        this.flushedPosition.set(pos);
     }
 
     public int getFileSize() {

@@ -15,14 +15,17 @@
 package com.jiaxy.liq.store;
 
 import com.jiaxy.liq.core.message.Message;
+import com.jiaxy.liq.core.message.MessageMeta;
 import com.jiaxy.liq.core.message.MessageProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.List;
 
 import static com.jiaxy.liq.common.SystemTime.nowMillis;
-import static com.jiaxy.liq.core.message.MessageProtocol.BLANK_MESSAGE_LENGTH;
+import static com.jiaxy.liq.core.message.MessageProtocol.PADDING_MESSAGE_LENGTH;
 import static com.jiaxy.liq.store.PutMessageStatus.*;
 
 /**
@@ -42,7 +45,7 @@ public class DefaultCommitLog implements CommitLog {
 
     private final PutMessageLock putMessageLock;
 
-    private final MessageProtocol msgFileProtocol;
+    private final MessageProtocol messageProtocol;
 
     private final MessageStoreConfig messageStoreConfig;
 
@@ -50,7 +53,7 @@ public class DefaultCommitLog implements CommitLog {
         this.messageStoreConfig = storeConfig;
         this.mappedFileQueue = new MappedFileQueue(storeConfig.getStorePath(), storeConfig.getCommitLogFileSize());
         this.putMessageLock = new DefaultPutMessageLock();
-        this.msgFileProtocol = new MessageProtocol();
+        this.messageProtocol = new MessageProtocol();
     }
 
     public PutMessageResult putMessage(Message message) {
@@ -67,17 +70,17 @@ public class DefaultCommitLog implements CommitLog {
             }
             PutMessageResult putMessageResult = new PutMessageResult(PUT_OK);
             AppendMeta appendMeta = mappedFile.appendInByteBuffer((byteBuffer, writeOffset, leftSize) -> {
-                String msgId = msgFileProtocol.createMessageId(message, writeOffset);
+                String msgId = messageProtocol.createMessageId(message, writeOffset);
                 message.getMeta().setMsgId(msgId);
                 byte[] topicData = message.getMeta().getTopic().getBytes();
-                int totalLength = msgFileProtocol.calcTotalLength(message.getData().length, topicData.length);
+                int totalLength = messageProtocol.calcTotalLength(message.getData().length, topicData.length);
                 message.getMeta().setTotalLength(totalLength);
                 message.getMeta().setTopicData(topicData);
                 message.getMeta().setCommitLogOffset(writeOffset);
                 long start = nowMillis();
                 //the mapped file have not enough space
-                if (totalLength + BLANK_MESSAGE_LENGTH >= leftSize) {
-                    msgFileProtocol.writeBlankMessage(byteBuffer, leftSize);
+                if (totalLength + PADDING_MESSAGE_LENGTH >= leftSize) {
+                    messageProtocol.writePaddingMessage(byteBuffer, leftSize);
                     AppendMeta appendResult = new AppendMeta(writeOffset,
                             leftSize,
                             msgId,
@@ -87,7 +90,7 @@ public class DefaultCommitLog implements CommitLog {
                     putMessageResult.setStatus(END_OF_FILE);
                     return appendResult;
                 }
-                msgFileProtocol.writeMessage(message, byteBuffer);
+                messageProtocol.writeMessage(message, byteBuffer);
                 return new AppendMeta(writeOffset,
                         totalLength,
                         msgId,
@@ -98,11 +101,11 @@ public class DefaultCommitLog implements CommitLog {
             putMessageResult.setAppendResult(appendMeta);
             return putMessageResult;
         } catch (Exception e) {
-            logger.error("put [%s] message error.", message.getMeta().getTopic(), message.getMeta().getTopic());
+            logger.error("put [{}] message error.", message.getMeta().getTopic(), message.getMeta().getTopic(), e);
+            return new PutMessageResult(EXCEPTION);
         } finally {
             putMessageLock.unLock();
         }
-        return null;
     }
 
     @Override
@@ -135,9 +138,8 @@ public class DefaultCommitLog implements CommitLog {
     }
 
     public void recover() {
-
+        recoverFromNormalStatus();
     }
-
 
 
     private boolean checkStoreDir() {
@@ -154,4 +156,47 @@ public class DefaultCommitLog implements CommitLog {
             }
         }
     }
+
+
+    /**
+     * recover for commit log exit normally
+     */
+    private void recoverFromNormalStatus() {
+        List<MappedFile> mappedFiles = mappedFileQueue.getMappedFiles();
+        if (mappedFiles != null && !mappedFiles.isEmpty()) {
+            int index = mappedFiles.size() - messageStoreConfig.getRecoverBaseOnLastFileNums();
+            if (index < 0) {
+                index = 0;
+            }
+            MappedFile mappedFile = null;
+            int pos = 0;
+            long fileStartOffset = 0;
+            for (int i = index; i < mappedFiles.size(); i++) {
+                mappedFile = mappedFiles.get(i);
+                pos = 0;
+                fileStartOffset = mappedFile.getFileStartOffset();
+                ByteBuffer byteBuffer = mappedFile.sliceMappedByteBuffer();
+                while (true) {
+                    MessageMeta messageMeta = messageProtocol.readMessageMeta(byteBuffer, true);
+                    if (messageMeta.isPadding()) {
+                        break;
+                    } else if (messageMeta.getTotalLength() == 0) {
+                        break;
+                    }
+                    pos += messageMeta.getTotalLength();
+                }
+            }
+            //the last mapped file ready
+            mappedFile.ready(pos);
+            mappedFileQueue.setFlushedPosition(fileStartOffset + pos);
+        }
+    }
+
+    /**
+     * recover for commit log exit abnormally
+     */
+    private void recoverFromAbnormalStatus() {
+
+    }
+
 }

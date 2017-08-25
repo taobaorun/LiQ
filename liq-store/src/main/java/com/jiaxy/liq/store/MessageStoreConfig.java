@@ -29,6 +29,9 @@ public class MessageStoreConfig {
     //1G
     private int commitLogFileSize = 1024 * 1024 * 1024;
 
+    //recover normally by the last files
+    private int recoverBaseOnLastFileNums = 1;
+
     public String getStorePath() {
         return storePath;
     }
@@ -43,5 +46,13 @@ public class MessageStoreConfig {
 
     public void setCommitLogFileSize(int commitLogFileSize) {
         this.commitLogFileSize = commitLogFileSize;
+    }
+
+    public int getRecoverBaseOnLastFileNums() {
+        return recoverBaseOnLastFileNums;
+    }
+
+    public void setRecoverBaseOnLastFileNums(int recoverBaseOnLastFileNums) {
+        this.recoverBaseOnLastFileNums = recoverBaseOnLastFileNums;
     }
 }

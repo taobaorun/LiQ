@@ -57,6 +57,13 @@ public class MessageMeta {
     private long storedTimestamp;
 
 
+    public boolean isPadding() {
+        if (msgType == MessageType.PADDING) {
+            return true;
+        }
+        return false;
+    }
+
     public String getTopic() {
         return topic;
     }

@@ -23,6 +23,9 @@ package com.jiaxy.liq.core.message;
  */
 public class MessageType {
 
+    //padding message
+    public static final int PADDING = 1;
+
     public static final int TRANSACTION_NOT_TYPE = 0;
 
 
