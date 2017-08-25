@@ -26,6 +26,8 @@ import java.util.List;
 
 import static com.jiaxy.liq.common.SystemTime.nowMillis;
 import static com.jiaxy.liq.core.message.MessageProtocol.PADDING_MESSAGE_LENGTH;
+import static com.jiaxy.liq.store.AppendMeta.AppendStatus.APPEND_OK;
+import static com.jiaxy.liq.store.AppendMeta.AppendStatus.END_OF_FILE;
 import static com.jiaxy.liq.store.PutMessageStatus.*;
 
 /**
@@ -69,40 +71,24 @@ public class DefaultCommitLog implements CommitLog {
                 return new PutMessageResult(CREATE_MAPPED_FILE_ERROR);
             }
             PutMessageResult putMessageResult = new PutMessageResult(PUT_OK);
-            AppendMeta appendMeta = mappedFile.appendInByteBuffer((byteBuffer, writeOffset, leftSize) -> {
-                String msgId = messageProtocol.createMessageId(message, writeOffset);
-                message.getMeta().setMsgId(msgId);
-                byte[] topicData = message.getMeta().getTopic().getBytes();
-                int totalLength = messageProtocol.calcTotalLength(message.getData().length, topicData.length);
-                message.getMeta().setTotalLength(totalLength);
-                message.getMeta().setTopicData(topicData);
-                message.getMeta().setCommitLogOffset(writeOffset);
-                long start = nowMillis();
-                //the mapped file have not enough space
-                if (totalLength + PADDING_MESSAGE_LENGTH >= leftSize) {
-                    messageProtocol.writePaddingMessage(byteBuffer, leftSize);
-                    AppendMeta appendResult = new AppendMeta(writeOffset,
-                            leftSize,
-                            msgId,
-                            0,
-                            message.getMeta().getStoredTimestamp(),
-                            (int) (nowMillis() - start));
-                    putMessageResult.setStatus(END_OF_FILE);
-                    return appendResult;
-                }
-                messageProtocol.writeMessage(message, byteBuffer);
-                return new AppendMeta(writeOffset,
-                        totalLength,
-                        msgId,
-                        0,
-                        message.getMeta().getStoredTimestamp(),
-                        (int) (nowMillis() - start));
-            });
+            AppendMeta appendMeta = mappedFile.appendInByteBuffer((byteBuffer, writeOffset, leftSize) -> appendMessage(byteBuffer, writeOffset, leftSize, message));
+            switch (appendMeta.getStatus()) {
+                case APPEND_OK:
+                    break;
+                case END_OF_FILE:
+                    mappedFile = mappedFileQueue.getLastMappedFile(0, true);
+                    if (mappedFile == null) {
+                        logger.error("create mapped file error.when the last file is full.");
+                        return new PutMessageResult(CREATE_MAPPED_FILE_ERROR);
+                    }
+                    appendMeta = mappedFile.appendInByteBuffer((byteBuffer, writeOffset, leftSize) -> appendMessage(byteBuffer, writeOffset, leftSize, message));
+                    break;
+            }
             putMessageResult.setAppendResult(appendMeta);
             return putMessageResult;
         } catch (Exception e) {
             logger.error("put [{}] message error.", message.getMeta().getTopic(), message.getMeta().getTopic(), e);
-            return new PutMessageResult(EXCEPTION);
+            return new PutMessageResult(PUT_FAILED);
         } finally {
             putMessageLock.unLock();
         }
@@ -155,6 +141,45 @@ public class DefaultCommitLog implements CommitLog {
                 return false;
             }
         }
+    }
+
+    /**
+     * append one message
+     *
+     * @param byteBuffer  mapped file context:sliced buffer
+     * @param writeOffset mapped file context:append message physical offset
+     * @param leftSize    mapped file context:the file left space
+     * @param message     the message will be appended
+     * @return
+     */
+    private AppendMeta appendMessage(ByteBuffer byteBuffer, long writeOffset, int leftSize, Message message) {
+        String msgId = messageProtocol.createMessageId(message, writeOffset);
+        message.getMeta().setMsgId(msgId);
+        byte[] topicData = message.getMeta().getTopic().getBytes();
+        int totalLength = messageProtocol.calcTotalLength(message.getData().length, topicData.length);
+        message.getMeta().setTotalLength(totalLength);
+        message.getMeta().setTopicData(topicData);
+        message.getMeta().setCommitLogOffset(writeOffset);
+        long start = nowMillis();
+        //the mapped file have not enough space
+        if (totalLength + PADDING_MESSAGE_LENGTH >= leftSize) {
+            messageProtocol.writePaddingMessage(byteBuffer, leftSize);
+            AppendMeta appendResult = new AppendMeta(END_OF_FILE, writeOffset,
+                    leftSize,
+                    msgId,
+                    0,
+                    message.getMeta().getStoredTimestamp(),
+                    (int) (nowMillis() - start));
+            return appendResult;
+        }
+        messageProtocol.writeMessage(message, byteBuffer);
+        return new AppendMeta(APPEND_OK, writeOffset,
+                totalLength,
+                msgId,
+                0,
+                message.getMeta().getStoredTimestamp(),
+                (int) (nowMillis() - start));
+
     }
 
 

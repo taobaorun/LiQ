@@ -36,7 +36,16 @@ public class AppendMeta {
 
     private int pageCacheRT;
 
-    public AppendMeta(long wroteOffset, int wroteBytes, String msgId, long queueOffset, long storeTimestamp, int pageCacheRT) {
+    private AppendStatus status;
+
+    public AppendMeta(AppendStatus status,
+                      long wroteOffset,
+                      int wroteBytes,
+                      String msgId,
+                      long queueOffset,
+                      long storeTimestamp,
+                      int pageCacheRT) {
+        this.status = status;
         this.wroteOffset = wroteOffset;
         this.wroteBytes = wroteBytes;
         this.msgId = msgId;
@@ -91,5 +100,20 @@ public class AppendMeta {
 
     public void setPageCacheRT(int pageCacheRT) {
         this.pageCacheRT = pageCacheRT;
+    }
+
+    public AppendStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AppendStatus status) {
+        this.status = status;
+    }
+
+    protected enum AppendStatus {
+        APPEND_OK,
+        END_OF_FILE,
+        EXCEPTION;
+
     }
 }

@@ -66,10 +66,12 @@ public class DefaultCommitLogTest {
         Message message = new Message();
         message.getMeta().setTopic("LiQTopic");
         TreeMap<Long, Integer> map = new TreeMap<>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1000; i++) {
             message.setData(("Hello LiQ! " + i).getBytes());
             PutMessageResult result = defaultCommitLog.putMessage(message);
-            map.put(result.getAppendResult().getWroteOffset(), result.getAppendResult().getWroteBytes());
+            if (result.getStatus() == PutMessageStatus.PUT_OK) {
+                map.put(result.getAppendResult().getWroteOffset(), result.getAppendResult().getWroteBytes());
+            }
         }
         int index = 0;
         for (Map.Entry<Long, Integer> entry : map.entrySet()) {
@@ -80,6 +82,7 @@ public class DefaultCommitLogTest {
             Assert.assertNotNull(message);
             Assert.assertEquals("Hello LiQ! " + (index++), new String(message.getData()));
         }
+        Assert.assertEquals(1000,index);
     }
 
 
