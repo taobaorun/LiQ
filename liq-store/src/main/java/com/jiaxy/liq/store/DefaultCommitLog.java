@@ -189,7 +189,7 @@ public class DefaultCommitLog implements CommitLog {
     private void recoverFromNormalStatus() {
         List<MappedFile> mappedFiles = mappedFileQueue.getMappedFiles();
         if (mappedFiles != null && !mappedFiles.isEmpty()) {
-            int index = mappedFiles.size() - messageStoreConfig.getRecoverBaseOnLastFileNums();
+            int index = mappedFiles.size() - messageStoreConfig.getRecoverBaseOnLastFileNum();
             if (index < 0) {
                 index = 0;
             }
