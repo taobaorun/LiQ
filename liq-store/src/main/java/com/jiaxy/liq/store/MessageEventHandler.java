@@ -14,44 +14,14 @@
 
 package com.jiaxy.liq.store;
 
-import com.jiaxy.liq.core.message.Message;
-
 /**
  * Description: <br/>
- * <p>
- * store messages
- * <p>
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/22 10:40
+ * @Date: 2017/08/28 14:44
  */
-public interface MessageStore {
+public interface MessageEventHandler {
 
-
-    /**
-     * load stored messages
-     *
-     * @return
-     */
-    boolean load();
-
-
-    void start();
-
-
-    /**
-     * stop the message store service
-     */
-    void shutdown();
-
-
-    /**
-     * store the message
-     *
-     * @param message received message
-     * @return {@link PutMessageResult}
-     */
-    PutMessageResult putMessage(Message message);
-
+    boolean handle(MessageEvent event);
 }

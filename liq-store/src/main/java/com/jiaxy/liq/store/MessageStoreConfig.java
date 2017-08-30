@@ -24,20 +24,36 @@ package com.jiaxy.liq.store;
 public class MessageStoreConfig {
 
     //message stored dir path
-    private String storePath;
+    private String commitLogStorePath;
+
+    private String messageQueueStorePath;
 
     //1G
     private int commitLogFileSize = 1024 * 1024 * 1024;
 
+    //message queue file size
+    private int messageQueueFileSize = 1000 * 1000 * 6;
+
     //recover normally by the last files
     private int recoverBaseOnLastFileNum = 1;
 
-    public String getStorePath() {
-        return storePath;
+    //put message queue retry time
+    private int putMQRetryTime = 10;
+
+    public String getCommitLogStorePath() {
+        return commitLogStorePath;
     }
 
-    public void setStorePath(String storePath) {
-        this.storePath = storePath;
+    public void setCommitLogStorePath(String commitLogStorePath) {
+        this.commitLogStorePath = commitLogStorePath;
+    }
+
+    public String getMessageQueueStorePath() {
+        return messageQueueStorePath;
+    }
+
+    public void setMessageQueueStorePath(String messageQueueStorePath) {
+        this.messageQueueStorePath = messageQueueStorePath;
     }
 
     public int getCommitLogFileSize() {
@@ -50,6 +66,18 @@ public class MessageStoreConfig {
 
     public int getRecoverBaseOnLastFileNum() {
         return recoverBaseOnLastFileNum;
+    }
+
+    public int getMessageQueueFileSize() {
+        return messageQueueFileSize;
+    }
+
+    public void setMessageQueueFileSize(int messageQueueFileSize) {
+        this.messageQueueFileSize = messageQueueFileSize;
+    }
+
+    public int getPutMQRetryTime() {
+        return putMQRetryTime;
     }
 
     public void setRecoverBaseOnLastFileNum(int recoverBaseOnLastFileNum) {

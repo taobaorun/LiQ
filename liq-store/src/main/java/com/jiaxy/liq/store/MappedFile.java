@@ -197,6 +197,10 @@ public class MappedFile {
         return fileSize;
     }
 
+    public String getFileName() {
+        return fileName;
+    }
+
     private void build() throws IOException {
         try {
             this.file = new File(fileName);

@@ -14,15 +14,17 @@
 
 package com.jiaxy.liq.store;
 
+import com.jiaxy.liq.common.FileUtil;
 import com.jiaxy.liq.core.message.Message;
 import com.jiaxy.liq.core.message.MessageMeta;
 import com.jiaxy.liq.core.message.MessageProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.jiaxy.liq.common.SystemTime.nowMillis;
 import static com.jiaxy.liq.core.message.MessageProtocol.PADDING_MESSAGE_LENGTH;
@@ -51,14 +53,19 @@ public class DefaultCommitLog implements CommitLog {
 
     private final MessageStoreConfig messageStoreConfig;
 
+    private final HashMap<String /*topic-queueId*/, Long /*queue index*/> topicMQIndex = new HashMap<>();
+
     public DefaultCommitLog(MessageStoreConfig storeConfig) {
         this.messageStoreConfig = storeConfig;
-        this.mappedFileQueue = new MappedFileQueue(storeConfig.getStorePath(), storeConfig.getCommitLogFileSize());
+        this.mappedFileQueue = new MappedFileQueue(storeConfig.getCommitLogStorePath(), storeConfig.getCommitLogFileSize());
         this.putMessageLock = new DefaultPutMessageLock();
         this.messageProtocol = new MessageProtocol();
     }
 
     public PutMessageResult putMessage(Message message) {
+        String topic = message.getMeta().getTopic();
+        Integer queueId = message.getMeta().getQueueId();
+        String topicQueueKey = topicQueueKey(topic, queueId);
         try {
             putMessageLock.lock();
             message.getMeta().setStoredTimestamp(nowMillis());
@@ -68,10 +75,10 @@ public class DefaultCommitLog implements CommitLog {
             }
             if (mappedFile == null) {
                 logger.error("create mapped file error");
-                return new PutMessageResult(CREATE_MAPPED_FILE_ERROR);
+                return new PutMessageResult(topic, queueId, CREATE_MAPPED_FILE_ERROR);
             }
-            PutMessageResult putMessageResult = new PutMessageResult(PUT_OK);
-            AppendMeta appendMeta = mappedFile.appendInByteBuffer((byteBuffer, writeOffset, leftSize) -> appendMessage(byteBuffer, writeOffset, leftSize, message));
+            PutMessageResult putMessageResult = new PutMessageResult(topic, queueId, PUT_OK);
+            AppendMeta appendMeta = mappedFile.appendInByteBuffer((byteBuffer, writeOffset, leftSize) -> appendMessage(byteBuffer, writeOffset, leftSize, message, topicQueueKey));
             switch (appendMeta.getStatus()) {
                 case APPEND_OK:
                     break;
@@ -79,16 +86,17 @@ public class DefaultCommitLog implements CommitLog {
                     mappedFile = mappedFileQueue.getLastMappedFile(0, true);
                     if (mappedFile == null) {
                         logger.error("create mapped file error.when the last file is full.");
-                        return new PutMessageResult(CREATE_MAPPED_FILE_ERROR);
+                        return new PutMessageResult(topic, queueId, CREATE_MAPPED_FILE_ERROR);
                     }
-                    appendMeta = mappedFile.appendInByteBuffer((byteBuffer, writeOffset, leftSize) -> appendMessage(byteBuffer, writeOffset, leftSize, message));
+                    appendMeta = mappedFile.appendInByteBuffer((byteBuffer, writeOffset, leftSize) -> appendMessage(byteBuffer, writeOffset, leftSize, message, topicQueueKey));
                     break;
             }
             putMessageResult.setAppendResult(appendMeta);
+            updateMessageQueueIndex(topicQueueKey);
             return putMessageResult;
         } catch (Exception e) {
             logger.error("put [{}] message error.", message.getMeta().getTopic(), message.getMeta().getTopic(), e);
-            return new PutMessageResult(PUT_FAILED);
+            return new PutMessageResult(topic, queueId, PUT_FAILED);
         } finally {
             putMessageLock.unLock();
         }
@@ -128,18 +136,17 @@ public class DefaultCommitLog implements CommitLog {
     }
 
 
+    public void resetTopicMQIndex(Map<String,Long> newTopicMQIndex) {
+        this.topicMQIndex.clear();
+        this.topicMQIndex.putAll(newTopicMQIndex);
+    }
+
     private boolean checkStoreDir() {
-        File storeDir = new File(messageStoreConfig.getStorePath());
-        if (storeDir.exists()) {
-            return true;
-        } else {
-            try {
-                storeDir.mkdir();
-                return true;
-            } catch (Exception e) {
-                logger.error("make the store dir:{} error.", messageStoreConfig.getStorePath(), e);
-                return false;
-            }
+        try {
+            return FileUtil.checkDirectory(messageStoreConfig.getCommitLogStorePath(), true);
+        } catch (Exception e) {
+            logger.error("make the store dir:{} error.", messageStoreConfig.getCommitLogStorePath(), e);
+            return false;
         }
     }
 
@@ -152,7 +159,7 @@ public class DefaultCommitLog implements CommitLog {
      * @param message     the message will be appended
      * @return
      */
-    private AppendMeta appendMessage(ByteBuffer byteBuffer, long writeOffset, int leftSize, Message message) {
+    private AppendMeta appendMessage(ByteBuffer byteBuffer, long writeOffset, int leftSize, Message message, String topicQueueKey) {
         String msgId = messageProtocol.createMessageId(message, writeOffset);
         message.getMeta().setMsgId(msgId);
         byte[] topicData = message.getMeta().getTopic().getBytes();
@@ -160,6 +167,7 @@ public class DefaultCommitLog implements CommitLog {
         message.getMeta().setTotalLength(totalLength);
         message.getMeta().setTopicData(topicData);
         message.getMeta().setCommitLogOffset(writeOffset);
+        long queueIndex = getMessageQueueIndex(topicQueueKey);
         long start = nowMillis();
         //the mapped file have not enough space
         if (totalLength + PADDING_MESSAGE_LENGTH >= leftSize) {
@@ -167,7 +175,7 @@ public class DefaultCommitLog implements CommitLog {
             AppendMeta appendResult = new AppendMeta(END_OF_FILE, writeOffset,
                     leftSize,
                     msgId,
-                    0,
+                    queueIndex,
                     message.getMeta().getStoredTimestamp(),
                     (int) (nowMillis() - start));
             return appendResult;
@@ -176,7 +184,7 @@ public class DefaultCommitLog implements CommitLog {
         return new AppendMeta(APPEND_OK, writeOffset,
                 totalLength,
                 msgId,
-                0,
+                queueIndex,
                 message.getMeta().getStoredTimestamp(),
                 (int) (nowMillis() - start));
 
@@ -216,12 +224,28 @@ public class DefaultCommitLog implements CommitLog {
             mappedFileQueue.setFlushedPosition(fileStartOffset + pos);
         }
     }
-
     /**
      * recover for commit log exit abnormally
      */
     private void recoverFromAbnormalStatus() {
 
+    }
+
+    private long getMessageQueueIndex(String topicQueueKey) {
+        return topicMQIndex.getOrDefault(topicQueueKey, 0L);
+    }
+
+    private void updateMessageQueueIndex(String topicQueueKey) {
+        topicMQIndex.put(topicQueueKey, topicMQIndex.getOrDefault(topicQueueKey, 0L) + 1);
+    }
+
+
+    public static String topicQueueKey(String topic, Integer queueId) {
+        StringBuilder keyBuilder = new StringBuilder();
+        keyBuilder.append(topic);
+        keyBuilder.append("#");
+        keyBuilder.append(queueId);
+        return keyBuilder.toString();
     }
 
 }

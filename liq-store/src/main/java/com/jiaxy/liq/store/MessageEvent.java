@@ -19,24 +19,31 @@ package com.jiaxy.liq.store;
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/21 14:34
+ * @Date: 2017/08/29 17:49
  */
-public class PutMessageResult implements Comparable<PutMessageResult> {
+public class MessageEvent implements Comparable<MessageEvent> {
 
     private String topic;
 
     private Integer queueId;
 
-    private PutMessageStatus status;
+    private long tagsCode;
 
-    private AppendMeta appendResult;
+    private PutMessageResult putRs;
 
-
-    public PutMessageResult(String topic, Integer queueId, PutMessageStatus status) {
-        this.status = status;
+    public MessageEvent(String topic, Integer queueId, long tagsCode, PutMessageResult putRs) {
+        this.topic = topic;
+        this.queueId = queueId;
+        this.tagsCode = tagsCode;
+        this.putRs = putRs;
     }
 
-    public PutMessageResult() {
+    @Override
+    public int compareTo(MessageEvent o) {
+        if (this.getPutRs().getAppendResult().getWroteOffset() < o.getPutRs().getAppendResult().getWroteOffset()) {
+            return -1;
+        }
+        return 1;
     }
 
     public String getTopic() {
@@ -55,31 +62,19 @@ public class PutMessageResult implements Comparable<PutMessageResult> {
         this.queueId = queueId;
     }
 
-    public PutMessageStatus getStatus() {
-        return status;
+    public long getTagsCode() {
+        return tagsCode;
     }
 
-    public void setStatus(PutMessageStatus status) {
-        this.status = status;
+    public void setTagsCode(long tagsCode) {
+        this.tagsCode = tagsCode;
     }
 
-    public AppendMeta getAppendResult() {
-        return appendResult;
+    public PutMessageResult getPutRs() {
+        return putRs;
     }
 
-    public void setAppendResult(AppendMeta appendResult) {
-        this.appendResult = appendResult;
-    }
-
-
-    @Override
-    public int compareTo(PutMessageResult o) {
-        if (getAppendResult().getWroteOffset() < o.getAppendResult().getWroteOffset()) {
-            return -1;
-        } else {
-            return 1;
-        }
+    public void setPutRs(PutMessageResult putRs) {
+        this.putRs = putRs;
     }
 }
-
-

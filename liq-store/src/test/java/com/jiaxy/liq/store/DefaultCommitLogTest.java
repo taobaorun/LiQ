@@ -38,7 +38,7 @@ public class DefaultCommitLogTest {
     @Before
     public void setUp() throws Exception {
         MessageStoreConfig config = new MessageStoreConfig();
-        config.setStorePath(Thread.currentThread()
+        config.setCommitLogStorePath(Thread.currentThread()
                 .getContextClassLoader()
                 .getResource("")
                 .getPath() + "store");

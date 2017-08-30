@@ -143,7 +143,8 @@ public class MappedFileQueue {
         for (File file : files) {
             if (file.length() != mappedFileSize) {
                 logger.warn("the file {}'s length is not equal the configured mapped file size[{}],ignore behind files.",
-                        file.getName(), mappedFileSize);
+                        file.getAbsolutePath(),
+                        mappedFileSize);
                 return true;
             }
             try {
@@ -156,6 +157,18 @@ public class MappedFileQueue {
             }
         }
         return true;
+    }
+
+
+    /**
+     * @return max physical offset
+     */
+    public long getMaxPhyOffset() {
+        MappedFile mappedFile = getLastMappedFile();
+        if (mappedFile != null) {
+            return mappedFile.getFileStartOffset() + mappedFile.getWrotePosition();
+        }
+        return 0;
     }
 
     protected void setFlushedPosition(long flushedPosition) {

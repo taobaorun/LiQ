@@ -56,6 +56,8 @@ public class MessageMeta {
 
     private long storedTimestamp;
 
+    private String tags = "";
+
 
     public boolean isPadding() {
         if (msgType == MessageType.PADDING) {
@@ -174,5 +176,13 @@ public class MessageMeta {
 
     public void setTopicData(byte[] topicData) {
         this.topicData = topicData;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
     }
 }

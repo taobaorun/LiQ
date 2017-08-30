@@ -14,6 +14,7 @@
 
 package com.jiaxy.liq.common;
 
+import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.text.NumberFormat;
 
@@ -27,11 +28,9 @@ import java.text.NumberFormat;
 public class FileUtil {
 
     /**
-     *
      * get file name by offset
      *
      * @param offset file start offset
-     *
      * @return
      */
     public static String getFileName(long offset) {
@@ -50,5 +49,20 @@ public class FileUtil {
     public static void unmap(MappedByteBuffer mappedByteBuffer) {
         //TODO
 
+    }
+
+    public static boolean checkDirectory(String dirPath, boolean needCreate) throws Exception {
+        File dir = new File(dirPath);
+        if (dir.exists()) {
+            return true;
+        } else if (needCreate) {
+            try {
+                dir.mkdir();
+                return true;
+            } catch (Exception e) {
+                throw e;
+            }
+        }
+        return false;
     }
 }
