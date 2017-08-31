@@ -58,4 +58,18 @@ public interface CommitLog {
     void recover();
 
 
+    /**
+     * @param phyOffset
+     * @return next file start offset by the <code>phyOffset</code>
+     */
+    long rollNextFile(long phyOffset);
+
+
+    /**
+     *
+     * @return the commit log min offset
+     */
+    long getMinOffset();
+
+
 }

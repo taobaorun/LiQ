@@ -87,6 +87,14 @@ public class MappedFileQueue {
     }
 
 
+    public MappedFile getFirstMappedFile() {
+        if (mappedFiles.isEmpty()) {
+            return null;
+        }
+        return mappedFiles.get(0);
+    }
+
+
     /**
      * find mapped file by the physical offset
      *

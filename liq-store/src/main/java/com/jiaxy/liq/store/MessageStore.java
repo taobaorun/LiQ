@@ -54,4 +54,14 @@ public interface MessageStore {
      */
     PutMessageResult putMessage(Message message);
 
+
+    /**
+     * @param topic          topic
+     * @param queueId        message queue id
+     * @param queueIndex     message queue index
+     * @param maxMessageSize get max message size
+     * @return messages by the <code>topic</code> ,<code>queueId<code/> and the <code>queueIndex</code>
+     */
+    GetMessageResult getMessage(String topic, Integer queueId, long queueIndex, int maxMessageSize);
+
 }

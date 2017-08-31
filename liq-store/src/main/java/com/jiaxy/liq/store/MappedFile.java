@@ -116,6 +116,21 @@ public class MappedFile {
     }
 
 
+    /**
+     *
+     * @param pos
+     *
+     * @return
+     */
+    public SelectedMappedFileSection selectMappedFileSection(int pos) {
+        int size = getWrotePosition() - pos;
+        if (size < 0) {
+            return null;
+        }
+        return selectMappedFileSection(pos, size);
+    }
+
+
     public long getFileStartOffset() {
         return fileStartOffset;
     }

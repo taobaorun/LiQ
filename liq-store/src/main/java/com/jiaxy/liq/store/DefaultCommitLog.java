@@ -117,6 +117,7 @@ public class DefaultCommitLog implements CommitLog {
         mappedFileQueue.flush();
     }
 
+    @Override
     public boolean load() {
         if (!checkStoreDir()) {
             logger.error("the store dir is illegal");
@@ -131,12 +132,29 @@ public class DefaultCommitLog implements CommitLog {
         return rs;
     }
 
+
+    @Override
     public void recover() {
         recoverFromNormalStatus();
     }
 
 
-    public void resetTopicMQIndex(Map<String,Long> newTopicMQIndex) {
+    @Override
+    public long rollNextFile(long phyOffset) {
+        long start = phyOffset - phyOffset % messageStoreConfig.getCommitLogFileSize();
+        return start + messageStoreConfig.getCommitLogFileSize();
+    }
+
+    @Override
+    public long getMinOffset() {
+        MappedFile mappedFile = mappedFileQueue.getFirstMappedFile();
+        if (mappedFile != null) {
+            return mappedFile.getFileStartOffset();
+        }
+        return -1;
+    }
+
+    public void resetTopicMQIndex(Map<String, Long> newTopicMQIndex) {
         this.topicMQIndex.clear();
         this.topicMQIndex.putAll(newTopicMQIndex);
     }
@@ -224,6 +242,7 @@ public class DefaultCommitLog implements CommitLog {
             mappedFileQueue.setFlushedPosition(fileStartOffset + pos);
         }
     }
+
     /**
      * recover for commit log exit abnormally
      */

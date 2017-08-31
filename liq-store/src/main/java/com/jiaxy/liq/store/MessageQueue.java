@@ -75,7 +75,7 @@ public class MessageQueue {
      * @param phyOffset
      * @param size
      * @param tagsCode
-     * @param queueIndex relative queue offset
+     * @param queueIndex queue index
      * @return
      */
     public boolean putMessageQueue(long phyOffset, int size, long tagsCode, long queueIndex) {
@@ -118,7 +118,26 @@ public class MessageQueue {
 
 
     /**
-     *
+     * @param queueIndex liner increasing queue index
+     * @return message in message queue content {@link SelectedMappedFileSection}
+     */
+    public SelectedMappedFileSection readMessageQueue(long queueIndex) {
+        long mqPhyOffset = queueIndex * ITEM_SIZE;
+        MappedFile mappedFile = mappedFileQueue.findMappedFile(mqPhyOffset);
+        if (mappedFile != null) {
+            return mappedFile.selectMappedFileSection((int) (mqPhyOffset % mappedFileSize));
+        }
+        return null;
+    }
+
+
+    /**
+     * recover message queue
+     * <p>
+     * <ul>
+     * <li>maxCommitLogPhyOffset</li>
+     * <li>mapped file position</li>
+     * </ul>
      */
     public void recover() {
         List<MappedFile> mappedFiles = mappedFileQueue.getMappedFiles();
@@ -159,18 +178,52 @@ public class MessageQueue {
 
 
     /**
+     * update message queue <code>minMessageQueueOffset</code> by <code>commitLogMinPhyOffset</code>
+     *
+     * @param commitLogMinPhyOffset commit log min physical offset
+     */
+    public void updateMinMessageQueueOffset(long commitLogMinPhyOffset) {
+        MappedFile mappedFile = mappedFileQueue.getFirstMappedFile();
+        if (mappedFile != null) {
+            SelectedMappedFileSection selectedSection = mappedFile.selectMappedFileSection(0);
+            if (selectedSection != null) {
+                ByteBuffer byteBuffer = selectedSection.getByteBuffer();
+                for (int i = 0; i < selectedSection.getSize(); i += ITEM_SIZE) {
+                    long phyOffset = byteBuffer.getLong();
+                    byteBuffer.getInt();
+                    byteBuffer.getLong();
+                    if (phyOffset >= commitLogMinPhyOffset) {
+                        minMessageQueueOffset = mappedFile.getFileStartOffset() + i;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
      * @return message queue max index
      */
     public long getMessageQueueMaxIndex() {
         return this.mappedFileQueue.getMaxPhyOffset() / ITEM_SIZE;
     }
 
-    public long getMinMessageQueueOffset() {
-        return minMessageQueueOffset;
+
+    /**
+     * @return message queue max index
+     */
+    public long getMessageQueueMinIndex() {
+        return minMessageQueueOffset / ITEM_SIZE;
     }
 
-    public long getMaxCommitLogPhyOffset() {
-        return maxCommitLogPhyOffset;
+
+    /**
+     * @param queueIndex
+     * @return the start queue index of next file
+     */
+    public long rollNextFile(long queueIndex) {
+        return queueIndex - queueIndex % ITEM_SIZE + (mappedFileSize / ITEM_SIZE);
     }
 
     public String getTopic() {

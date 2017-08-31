@@ -15,6 +15,8 @@
 package com.jiaxy.liq.store;
 
 import com.jiaxy.liq.core.message.Message;
+import com.jiaxy.liq.core.message.MessageProtocol;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -58,7 +60,33 @@ public class DefaultMessageStoreTest {
             defaultMessageStore.putMessage(message);
         }
         TimeUnit.SECONDS.sleep(1);
+    }
+
+
+    @Test
+    public void getMessage() throws Exception {
+        int messageCount = 0;
+        long queueIndex = 0;
+        GetMessageResult result = defaultMessageStore.getMessage("LiQTopic", 0, 1000, 100);
+        Assert.assertEquals(GetMessageStatus.MQ_INDEX_OVERFLOW, result.getStatus());
+        result = defaultMessageStore.getMessage("LiQTopic", 0, 999, 100);
+        Assert.assertEquals(1, result.getMessageCount());
+        do {
+            result = defaultMessageStore.getMessage("LiQTopic", 0, queueIndex, 100 - messageCount);
+            messageCount += result.getMessageCount();
+            queueIndex = result.getNextQueueIndex();
+            printMessage(result);
+
+        } while (messageCount < 100);
 
     }
 
+
+    private void printMessage(GetMessageResult result) {
+        MessageProtocol protocol = new MessageProtocol();
+        for (int i = 0; i < result.getMessageCount(); i++) {
+            Message message = protocol.readMessage(result.getSelectedSections().get(i).getByteBuffer());
+            System.out.println(new String(message.getData()));
+        }
+    }
 }

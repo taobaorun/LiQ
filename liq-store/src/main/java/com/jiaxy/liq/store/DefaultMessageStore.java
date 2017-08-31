@@ -18,6 +18,10 @@ import com.jiaxy.liq.core.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
+
+import static com.jiaxy.liq.store.GetMessageStatus.*;
+import static com.jiaxy.liq.store.MessageQueue.ITEM_SIZE;
 import static com.jiaxy.liq.store.PutMessageStatus.PUT_OK;
 
 /**
@@ -42,9 +46,9 @@ public class DefaultMessageStore implements MessageStore {
 
     public DefaultMessageStore(MessageStoreConfig storeConfig) {
         this.storeConfig = storeConfig;
-        this.messageQueueHolder = new MessageQueueHolder(this.storeConfig);
-        this.pipeline = new MessageEventPipeline(storeConfig, messageQueueHolder, 1000);
         this.commitLog = new DefaultCommitLog(this.storeConfig);
+        this.messageQueueHolder = new MessageQueueHolder(this.storeConfig, (DefaultCommitLog) this.commitLog);
+        this.pipeline = new MessageEventPipeline(storeConfig, messageQueueHolder, 1000);
     }
 
     @Override
@@ -81,6 +85,75 @@ public class DefaultMessageStore implements MessageStore {
     }
 
 
+    @Override
+    public GetMessageResult getMessage(String topic, Integer queueId, long queueIndex, int maxMessageSize) {
+        MessageQueue messageQueue = messageQueueHolder.findMessageQueue(topic, queueId);
+        GetMessageResult result = new GetMessageResult();
+        GetMessageStatus status = null;
+        long nextQueueIndex = 0;
+        long queueMinIndex = 0;
+        long queueMaxIndex = 0;
+        if (messageQueue != null) {
+            queueMaxIndex = messageQueue.getMessageQueueMaxIndex();
+            queueMinIndex = messageQueue.getMessageQueueMinIndex();
+            if (queueMaxIndex == 0) {
+                status = NO_MESSAGE_IN_MQ;
+                nextQueueIndex = nextQueueIndex(queueIndex, 0);
+            } else if (queueIndex < queueMinIndex) {
+                status = MQ_INDEX_TOO_SMALL;
+                nextQueueIndex = nextQueueIndex(queueIndex, queueMinIndex);
+            } else if (queueIndex >= queueMaxIndex) {
+                status = MQ_INDEX_OVERFLOW;
+                nextQueueIndex = nextQueueIndex(queueIndex, queueMaxIndex);
+            } else {
+                SelectedMappedFileSection selectedSection = messageQueue.readMessageQueue(queueIndex);
+                if (selectedSection != null) {
+                    int maxMessageCount = Math.max(800 * ITEM_SIZE, maxMessageSize * ITEM_SIZE);
+                    int i = 0;
+                    long nextMQStartIndex = -1;
+                    ByteBuffer byteBuffer = selectedSection.getByteBuffer();
+                    for (; i < selectedSection.getSize() && i < maxMessageCount; i += ITEM_SIZE) {
+                        //message count or message byte size
+                        if (isEnough(result, maxMessageSize)) {
+                            break;
+                        }
+                        long phyOffset = byteBuffer.getLong();
+                        int size = byteBuffer.getInt();
+                        long tagsCode = byteBuffer.getLong();
+                        //ignore the physical offset less than the message queue next file start queue index
+                        if (nextMQStartIndex != -1 && phyOffset < nextMQStartIndex) {
+                            continue;
+                        }
+                        SelectedMappedFileSection message = commitLog.getMessage(phyOffset, size);
+                        if (message == null) {
+                            nextMQStartIndex = messageQueue.rollNextFile(queueIndex);
+                            continue;
+                        }
+                        result.addMessage(message);
+                        status = FOUND;
+                        //rest
+                        nextMQStartIndex = -1;
+                    }
+                    nextQueueIndex = queueIndex + (i / ITEM_SIZE);
+                } else {
+                    status = MQ_SHOULD_NOT_NULL;
+                    nextQueueIndex = nextQueueIndex(queueIndex, messageQueue.rollNextFile(queueIndex));
+                    logger.warn("get message topic:{},request message queue index:{},min queue index :{},max queue index:{}",
+                            topic, queueIndex, queueMinIndex, queueMaxIndex);
+                }
+            }
+
+        } else {
+            status = MQ_NOT_FOUND;
+            nextQueueIndex = nextQueueIndex(queueIndex, 0);
+        }
+        result.setStatus(status);
+        result.setQueueMinIndex(queueMinIndex);
+        result.setQueueMaxIndex(queueMaxIndex);
+        result.setNextQueueIndex(nextQueueIndex);
+        return result;
+    }
+
     public MessageStoreConfig getStoreConfig() {
         return storeConfig;
     }
@@ -88,15 +161,25 @@ public class DefaultMessageStore implements MessageStore {
     private void recover() {
         messageQueueHolder.recoverMessageQueue();
         commitLog.recover();
-        recoverTopicMQIndex();
+        messageQueueHolder.recoverTopicMQIndex();
     }
 
 
-    private void recoverTopicMQIndex() {
-        if (commitLog instanceof DefaultCommitLog) {
-            ((DefaultCommitLog) commitLog).resetTopicMQIndex(messageQueueHolder.newTopicMQIndex());
+    /**
+     * @param old      old index
+     * @param newIndex new queue index for next
+     * @return
+     */
+    private long nextQueueIndex(long old, long newIndex) {
+        long next = newIndex;
+        return next;
+    }
+
+    private boolean isEnough(GetMessageResult result, int maxMessageSize) {
+        if (result.getMessageCount() >= maxMessageSize) {
+            return true;
         }
+        return false;
     }
-
 
 }

@@ -37,7 +37,10 @@ public class MessageQueueHolder {
 
     private final MessageStoreConfig storeConfig;
 
-    public MessageQueueHolder(MessageStoreConfig storeConfig) {
+    private final DefaultCommitLog commitLog;
+
+    public MessageQueueHolder(MessageStoreConfig storeConfig, DefaultCommitLog commitLog) {
+        this.commitLog = commitLog;
         this.storeConfig = storeConfig;
         mqMap = new ConcurrentHashMap<>(32);
     }
@@ -73,6 +76,9 @@ public class MessageQueueHolder {
         return true;
     }
 
+    /**
+     * recover topic message queue
+     */
     public void recoverMessageQueue() {
         for (ConcurrentHashMap<Integer, MessageQueueValue> mqs : mqMap.values()) {
             for (MessageQueueValue v : mqs.values()) {
@@ -83,21 +89,30 @@ public class MessageQueueHolder {
         }
     }
 
-    public HashMap<String, Long> newTopicMQIndex() {
+    /**
+     * recover queue index of each topic message queue
+     */
+    public void recoverTopicMQIndex() {
         HashMap<String, Long> map = new HashMap<>();
+        long commitLogMinOffset = commitLog.getMinOffset();
         for (ConcurrentHashMap<Integer, MessageQueueValue> mqs : mqMap.values()) {
             for (MessageQueueValue v : mqs.values()) {
                 MessageQueue mq = v.getMessageQueue();
                 if (mq != null) {
                     map.put(DefaultCommitLog.topicQueueKey(mq.getTopic(), mq.getQueueId()), mq.getMessageQueueMaxIndex());
+                    //update message queue min offset
+                    mq.updateMinMessageQueueOffset(commitLogMinOffset);
+
                 }
             }
         }
-        return map;
+        commitLog.resetTopicMQIndex(map);
     }
 
 
     /**
+     * get message queue or create message queue if not found
+     *
      * @param topic
      * @param queueId
      * @return {@link MessageQueue} or new one
@@ -131,6 +146,25 @@ public class MessageQueueHolder {
             }
         }
         return value.getMessageQueue();
+    }
+
+    /**
+     * find message queue by topic and queueId
+     *
+     * @param topic
+     * @param queueId
+     * @return
+     */
+    public MessageQueue findMessageQueue(String topic, Integer queueId) {
+        ConcurrentHashMap<Integer, MessageQueueValue> topicMQ = mqMap.get(topic);
+        if (topicMQ == null) {
+            return null;
+        }
+        MessageQueueValue v = topicMQ.get(queueId);
+        if (v != null) {
+            return v.getMessageQueue();
+        }
+        return null;
     }
 
 
