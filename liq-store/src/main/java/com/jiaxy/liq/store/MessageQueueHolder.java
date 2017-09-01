@@ -47,7 +47,7 @@ public class MessageQueueHolder {
 
 
     public boolean load() {
-        if (!checkMQDir()) {
+        if (!checkMQRootDir()) {
             return false;
         }
         File mqStore = new File(storeConfig.getMessageQueueStorePath());
@@ -169,15 +169,28 @@ public class MessageQueueHolder {
 
 
     private MessageQueue newMessageQueue(String topic, Integer queueId, MessageStoreConfig storeConfig) {
+        if (!checkMessageQueueDir(topic, queueId)) {
+            logger.warn("");
+        }
         MessageQueue messageQueue = new MessageQueue(topic, queueId, storeConfig);
         return messageQueue;
     }
 
-    private boolean checkMQDir() {
+    private boolean checkMQRootDir() {
         try {
             return FileUtil.checkDirectory(storeConfig.getMessageQueueStorePath(), true);
         } catch (Exception e) {
-            logger.error("make the message queue dir:{} error.", storeConfig.getMessageQueueStorePath(), e);
+            logger.error("make the message queue root dir:{} error.", storeConfig.getMessageQueueStorePath(), e);
+            return false;
+        }
+    }
+
+    private boolean checkMessageQueueDir(String topic, Integer queueId) {
+        String queueDir = storeConfig.getMessageQueueStorePath() + File.separator + topic + File.separator + queueId;
+        try {
+            return FileUtil.checkDirectory(queueDir, true);
+        } catch (Exception e) {
+            logger.error("make the message queue dir:{} error.", queueDir, e);
             return false;
         }
     }

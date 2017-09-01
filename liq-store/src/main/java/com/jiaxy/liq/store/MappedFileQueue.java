@@ -148,6 +148,9 @@ public class MappedFileQueue {
         if (files != null && files.length != 0) {
             Arrays.sort(files);
         }
+        if (files == null) {
+            return true;
+        }
         for (File file : files) {
             if (file.length() != mappedFileSize) {
                 logger.warn("the file {}'s length is not equal the configured mapped file size[{}],ignore behind files.",

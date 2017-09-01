@@ -57,8 +57,7 @@ public class FileUtil {
             return true;
         } else if (needCreate) {
             try {
-                dir.mkdir();
-                return true;
+                return dir.mkdirs();
             } catch (Exception e) {
                 throw e;
             }

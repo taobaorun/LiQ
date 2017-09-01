@@ -20,6 +20,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,28 +33,29 @@ import java.util.concurrent.TimeUnit;
  */
 public class DefaultMessageStoreTest {
 
-    private DefaultMessageStore defaultMessageStore;
+    private MessageStoreConfig storeConfig;
 
     @Before
     public void setUp() throws Exception {
-        MessageStoreConfig storeConfig = new MessageStoreConfig();
+        storeConfig = new MessageStoreConfig();
         storeConfig.setCommitLogStorePath(Thread.currentThread()
                 .getContextClassLoader()
                 .getResource("")
-                .getPath() + "store");
+                .getPath() + "store/commitlog");
         storeConfig.setCommitLogFileSize(1024);
         storeConfig.setMessageQueueStorePath(Thread.currentThread()
                 .getContextClassLoader()
                 .getResource("")
-                .getPath() + "mq");
+                .getPath() + "store/mq");
         storeConfig.setMessageQueueFileSize(1000);
-        defaultMessageStore = new DefaultMessageStore(storeConfig);
-        defaultMessageStore.load();
-        defaultMessageStore.start();
+
     }
 
     @Test
     public void putMessage() throws Exception {
+        MessageStore defaultMessageStore = new DefaultMessageStore(storeConfig);
+        defaultMessageStore.load();
+        defaultMessageStore.start();
         Message message = new Message();
         message.getMeta().setTopic("LiQTopic");
         for (int i = 0; i < 1000; i++) {
@@ -65,6 +68,19 @@ public class DefaultMessageStoreTest {
 
     @Test
     public void getMessage() throws Exception {
+        resetStoreDir();
+        MessageStore defaultMessageStore = new DefaultMessageStore(storeConfig);
+        defaultMessageStore.load();
+        defaultMessageStore.start();
+        //put messages
+        Message message = new Message();
+        message.getMeta().setTopic("LiQTopic");
+        for (int i = 0; i < 1000; i++) {
+            message.setData(("Hello LiQ! " + i).getBytes());
+            defaultMessageStore.putMessage(message);
+        }
+        TimeUnit.SECONDS.sleep(1);
+        //get messages
         int messageCount = 0;
         long queueIndex = 0;
         GetMessageResult result = defaultMessageStore.getMessage("LiQTopic", 0, 1000, 100);
@@ -89,4 +105,23 @@ public class DefaultMessageStoreTest {
             System.out.println(new String(message.getData()));
         }
     }
+
+    private String timestampDir() {
+        LocalDateTime ldt = LocalDateTime.now();
+        return ldt.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
+    }
+
+    private void resetStoreDir() {
+        String timestampDir = timestampDir();
+        storeConfig.setCommitLogStorePath(Thread.currentThread()
+                .getContextClassLoader()
+                .getResource("")
+                .getPath() + "store/" + timestampDir + "/commitlog");
+        storeConfig.setMessageQueueStorePath(Thread.currentThread()
+                .getContextClassLoader()
+                .getResource("")
+                .getPath() + "store/" + timestampDir + "/mq");
+
+    }
+
 }
