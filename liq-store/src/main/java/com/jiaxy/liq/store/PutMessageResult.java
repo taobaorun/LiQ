@@ -23,36 +23,16 @@ package com.jiaxy.liq.store;
  */
 public class PutMessageResult implements Comparable<PutMessageResult> {
 
-    private String topic;
-
-    private Integer queueId;
-
     private PutMessageStatus status;
 
     private AppendMeta appendResult;
 
 
-    public PutMessageResult(String topic, Integer queueId, PutMessageStatus status) {
+    public PutMessageResult(PutMessageStatus status) {
         this.status = status;
     }
 
     public PutMessageResult() {
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
-    public Integer getQueueId() {
-        return queueId;
-    }
-
-    public void setQueueId(Integer queueId) {
-        this.queueId = queueId;
     }
 
     public PutMessageStatus getStatus() {
@@ -79,6 +59,14 @@ public class PutMessageResult implements Comparable<PutMessageResult> {
         } else {
             return 1;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "PutMessageResult{" +
+                "status=" + status +
+                ", appendResult=" + appendResult +
+                '}';
     }
 }
 

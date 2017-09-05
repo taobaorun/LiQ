@@ -37,6 +37,14 @@ public interface CommitLog {
     SelectedMappedFileSection getMessage(long phyOffset, int size);
 
 
+    /**
+     *
+     * @param phyOffset
+     * @return
+     */
+    SelectedMappedFileSection getMessage(long phyOffset);
+
+
     void flush();
 
 
@@ -70,6 +78,13 @@ public interface CommitLog {
      * @return the commit log min offset
      */
     long getMinOffset();
+
+    /**
+     *
+     * @return the commit log max offset
+     */
+    long getMaxOffset();
+
 
 
 }

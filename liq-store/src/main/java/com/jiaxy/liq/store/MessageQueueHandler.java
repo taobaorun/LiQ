@@ -43,6 +43,9 @@ public class MessageQueueHandler implements MessageEventHandler {
     public boolean handle(MessageEvent event) {
         boolean result = false;
         for (int i = 0; !result && i <= retryTime; i++) {
+            if (event.getTopic() == null) {
+                System.out.println("topic is null "+event);
+            }
             MessageQueue messageQueue = mqHolder.getMessageQueue(event.getTopic(), event.getQueueId());
             if (messageQueue == null) {
                 result = false;

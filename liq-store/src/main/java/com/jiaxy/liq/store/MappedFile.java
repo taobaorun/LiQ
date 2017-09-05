@@ -110,16 +110,14 @@ public class MappedFile {
             byteBuffer.position(pos);
             ByteBuffer selected = byteBuffer.slice();
             selected.limit(size);
-            return new SelectedMappedFileSection(selected, size);
+            return new SelectedMappedFileSection(selected, fileStartOffset + pos, size);
         }
         return null;
     }
 
 
     /**
-     *
      * @param pos
-     *
      * @return
      */
     public SelectedMappedFileSection selectMappedFileSection(int pos) {

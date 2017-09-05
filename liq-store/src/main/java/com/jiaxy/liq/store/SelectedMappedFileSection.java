@@ -33,7 +33,11 @@ public class SelectedMappedFileSection {
 
     private int size;
 
-    public SelectedMappedFileSection(ByteBuffer byteBuffer, int size) {
+    //
+    private long startOffset;
+
+    public SelectedMappedFileSection(ByteBuffer byteBuffer,long startOffset, int size) {
+        this.startOffset = startOffset;
         this.byteBuffer = byteBuffer;
         this.size = size;
     }
@@ -44,5 +48,9 @@ public class SelectedMappedFileSection {
 
     public int getSize() {
         return size;
+    }
+
+    public long getStartOffset() {
+        return startOffset;
     }
 }

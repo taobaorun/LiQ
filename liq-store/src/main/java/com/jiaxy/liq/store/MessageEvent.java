@@ -77,4 +77,14 @@ public class MessageEvent implements Comparable<MessageEvent> {
     public void setPutRs(PutMessageResult putRs) {
         this.putRs = putRs;
     }
+
+    @Override
+    public String toString() {
+        return "MessageEvent{" +
+                "topic='" + topic + '\'' +
+                ", queueId=" + queueId +
+                ", tagsCode=" + tagsCode +
+                ", putRs=" + putRs +
+                '}';
+    }
 }

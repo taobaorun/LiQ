@@ -14,6 +14,7 @@
 
 package com.jiaxy.liq.store;
 
+import com.jiaxy.liq.common.SystemTime;
 import com.jiaxy.liq.core.message.Message;
 import com.jiaxy.liq.core.message.MessageProtocol;
 import org.junit.Assert;
@@ -42,12 +43,12 @@ public class DefaultMessageStoreTest {
                 .getContextClassLoader()
                 .getResource("")
                 .getPath() + "store/commitlog");
-        storeConfig.setCommitLogFileSize(1024);
+//        storeConfig.setCommitLogFileSize(1024);
         storeConfig.setMessageQueueStorePath(Thread.currentThread()
                 .getContextClassLoader()
                 .getResource("")
                 .getPath() + "store/mq");
-        storeConfig.setMessageQueueFileSize(1000);
+//        storeConfig.setMessageQueueFileSize(1000);
 
     }
 
@@ -56,13 +57,10 @@ public class DefaultMessageStoreTest {
         MessageStore defaultMessageStore = new DefaultMessageStore(storeConfig);
         defaultMessageStore.load();
         defaultMessageStore.start();
-        Message message = new Message();
-        message.getMeta().setTopic("LiQTopic");
-        for (int i = 0; i < 1000; i++) {
-            message.setData(("Hello LiQ! " + i).getBytes());
-            defaultMessageStore.putMessage(message);
+        for (int i= 0 ;i < 20;i++) {
+            million(defaultMessageStore);
         }
-        TimeUnit.SECONDS.sleep(1);
+        TimeUnit.SECONDS.sleep(60);
     }
 
 
@@ -108,7 +106,7 @@ public class DefaultMessageStoreTest {
 
     private String timestampDir() {
         LocalDateTime ldt = LocalDateTime.now();
-        return ldt.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
+        return ldt.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
     }
 
     private void resetStoreDir() {
@@ -122,6 +120,17 @@ public class DefaultMessageStoreTest {
                 .getResource("")
                 .getPath() + "store/" + timestampDir + "/mq");
 
+    }
+
+    private void million(MessageStore defaultMessageStore) {
+        Message message = new Message();
+        message.getMeta().setTopic("LiQTopic");
+        long start = SystemTime.nowMillis();
+        for (int i = 0; i < 1000000; i++) {
+            message.setData(("Hello LiQ! " + i).getBytes());
+            defaultMessageStore.putMessage(message);
+        }
+        System.out.println(SystemTime.nowMillis() - start);
     }
 
 }

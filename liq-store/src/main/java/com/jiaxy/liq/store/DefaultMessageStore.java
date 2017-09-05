@@ -48,7 +48,7 @@ public class DefaultMessageStore implements MessageStore {
         this.storeConfig = storeConfig;
         this.commitLog = new DefaultCommitLog(this.storeConfig);
         this.messageQueueHolder = new MessageQueueHolder(this.storeConfig, (DefaultCommitLog) this.commitLog);
-        this.pipeline = new MessageEventPipeline(storeConfig, messageQueueHolder, 1000);
+        this.pipeline = new AsyncMessageEventPipeline(this.storeConfig, this.messageQueueHolder, commitLog);
     }
 
     @Override

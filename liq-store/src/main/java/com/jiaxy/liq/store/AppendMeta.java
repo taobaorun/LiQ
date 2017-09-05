@@ -110,6 +110,20 @@ public class AppendMeta {
         this.status = status;
     }
 
+
+    @Override
+    public String toString() {
+        return "AppendMeta{" +
+                "wroteOffset=" + wroteOffset +
+                ", wroteBytes=" + wroteBytes +
+                ", msgId='" + msgId + '\'' +
+                ", queueOffset=" + queueOffset +
+                ", storeTimestamp=" + storeTimestamp +
+                ", pageCacheRT=" + pageCacheRT +
+                ", status=" + status +
+                '}';
+    }
+
     protected enum AppendStatus {
         APPEND_OK,
         END_OF_FILE,

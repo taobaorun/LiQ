@@ -54,6 +54,8 @@ public class MessageQueue {
 
     private final MessageStoreConfig storeConfig;
 
+    private long lastQueueIndex=0;
+
 
     public MessageQueue(String topic, int queueId, MessageStoreConfig storeConfig) {
         this.topic = topic;
@@ -98,13 +100,18 @@ public class MessageQueue {
         if (mappedFile.isFull()) {
             mappedFile = mappedFileQueue.getLastMappedFile(expectQueuePhyOffset, true);
         }
+        long tmp = lastQueueIndex;
+        lastQueueIndex = queueIndex;
         long currentQueuePhyOffset = mappedFile.getFileStartOffset() + mappedFile.getWrotePosition();
         if (expectQueuePhyOffset != currentQueuePhyOffset) {
-            logger.warn("message queue order maybe wrong.expect offset:{},current queue offset:{} Topic:{},QID:{}",
+            logger.warn("message queue order maybe wrong.expect offset:{},current queue offset:{} Topic:{},QID:{},{},{}",
                     expectQueuePhyOffset,
                     currentQueuePhyOffset,
                     topic,
-                    queueId);
+                    queueId,
+                    tmp,
+                    queueIndex);
+            System.exit(1);
         }
         itemByteBuffer.flip();
         itemByteBuffer.limit(ITEM_SIZE);

@@ -14,66 +14,21 @@
 
 package com.jiaxy.liq.store;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 /**
  * Description: <br/>
- * message pipeline
  * <p/>
  * <br/>
  *
- * @Date: 2017/08/28 10:24
+ * @Date: 2017/09/04 11:37
  */
-public class MessageEventPipeline {
+public interface MessageEventPipeline {
 
-    private final PriorityBlockingQueue<MessageEvent> pipeline;
+    void start();
 
-    private final List<MessageEventHandler> handlers = new ArrayList<>();
+    boolean messagePut(MessageEvent event);
 
-    private final MessageQueueHolder messageQueueHolder;
+    void dispatch();
 
-    private final MessageStoreConfig storeConfig;
-
-    private final Thread thread;
-
-
-    public MessageEventPipeline(MessageStoreConfig storeConfig, MessageQueueHolder messageQueueHolder, int capacity) {
-        this.storeConfig = storeConfig;
-        this.messageQueueHolder = messageQueueHolder;
-        pipeline = new PriorityBlockingQueue<>(capacity);
-        handlers.add(new MessageQueueHandler(this.storeConfig.getPutMQRetryTime(), this.messageQueueHolder));
-        thread = new Thread(() -> dispatch(), "message-event-pipeline");
-        thread.setDaemon(true);
-    }
-
-    public boolean messagePut(MessageEvent event) {
-        pipeline.put(event);
-        return true;
-    }
-
-
-    public void start() {
-        thread.start();
-    }
-
-
-    public void dispatch() {
-        while (true) {
-            try {
-                MessageEvent event = pipeline.take();
-                for (MessageEventHandler handler : handlers) {
-                    if (!handler.handle(event)) {
-                        pipeline.put(event);
-                        TimeUnit.MILLISECONDS.sleep(1);
-                    }
-                }
-            } catch (InterruptedException e) {
-            }
-        }
-    }
-
+    void dispatch(MessageEvent event);
 
 }
